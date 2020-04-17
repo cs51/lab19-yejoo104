@@ -1,18 +1,18 @@
-(* 
+(*
                              CS51 Lab 19
                     Synthesis -- The ATM Emulator
  *)
 
 (* Make use of the ATM component behaviors *)
 module ATM = ATMcomponents ;;
-open Printf ;;     
+open Printf ;;
 
 (* Exceptions for: *)
 (* ... moving on to the next customer *)
 exception ATMNext ;;
 (* ... exiting the ATM machine emulation *)
 exception ATMFinished ;;
-            
+
 (* atm initial -- Emulate an ATM communicating over `stdin` and
    `stdout` with customers until finished. The provided `initial` is
    an initial set of accounts to use. *)
@@ -22,43 +22,48 @@ let atm (initial : ATM.account_spec list) : unit =
      name and balance *)
   ATM.initialize initial;
 
-  try 
+  try
     (* process customers until finished *)
     while true do
 
       (* prompt for the customer's id and provide welcome *)
       let id = ATM.acquire_id () in
-      ATM.present_message ("Welcome " ^ (ATM.get_name id));
-      
+        ATM.present_message ("Welcome " ^ (ATM.get_name id));
+
       try
         (* perform actions on behalf of the selected customer *)
         while true do
           let act = ATM.acquire_act () in
-          
-          match act with 
-            
+
+          match act with
+
           (* balance inquiry *)
           | Balance ->
              ATM.present_message
-               (sprintf "Current balance: %d" (ATM.get_balance id))
+               (sprintf "Current balance is: %d" (ATM.get_balance id))
 
           (* withdrawal *)
           | Withdraw amount ->
              let bal = ATM.get_balance id in
              if amount > bal then
-               ATM.present_message (sprintf "Insufficient funds: %d" bal)
+               begin
+                 ATM.present_message (sprintf "Insufficient funds");
+                 ATM.present_message
+                   (sprintf "Current balance is: %d" (ATM.get_balance id))
+               end
              else
                (ATM.update_balance id (bal - amount);
+                printf "Here's your cash: ";
                 ATM.deliver_cash amount;
                 ATM.present_message
-                  (sprintf "New balance: %d" (ATM.get_balance id)))
+                  (sprintf "Current balance is: %d" (ATM.get_balance id)))
 
           (* deposit *)
           | Deposit amount ->
              let bal = ATM.get_balance id in
              ATM.update_balance id (bal + amount);
              ATM.present_message
-               (sprintf "New balance: %d" (ATM.get_balance id))
+               (sprintf "Current balance is: %d" (ATM.get_balance id))
 
           (* done with this customer; move on to the next *)
           | Next ->
@@ -71,7 +76,7 @@ let atm (initial : ATM.account_spec list) : unit =
              raise ATMFinished
         done
       with ATMNext -> ()
-                            
+
     done
   with ATMFinished -> () ;;
 
